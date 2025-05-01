@@ -30,7 +30,7 @@ model User {
   created_at DateTime @default(now()) @map("created_at")
 
   registers Register[]
-  observations Observation?
+  observations Observation[]
 
   @@map("users")
 }
@@ -40,10 +40,9 @@ model Register {
   name String 
   destination UserDestination
   authorizedBy String @map("authorized_by")
-  entry DateTime
+  entry DateTime @default(now())
   exit DateTime?
   observation String?
-  date DateTime @default(now())
   userId String  @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -57,8 +56,9 @@ model Register {
 
 model Observation {
   id String @id @default(uuid())
+  title String
   description String
-  userId String @default(uuid()) @map("user_id") @unique
+  userId String  @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -71,7 +71,7 @@ model Vehicle {
   plate String @unique
   brand String?
   model String?
-  registerId String @default(uuid()) @map("register_id") @unique
+  registerId String  @map("register_id") @unique
 
   register Register @relation(fields: [registerId], references: [id])
   @@map("vehicles")
