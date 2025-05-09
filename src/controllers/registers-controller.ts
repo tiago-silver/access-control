@@ -18,6 +18,11 @@ class RegistersController {
 
         const {name, destination, authorized_by, observation, user_id} = bodySchema.parse(request.body)
 
+        const userWithThisUserId = await prisma.user.findFirst({where : {id:user_id}})
+        
+        if(!userWithThisUserId){
+            return response.status(404).json({message: "User not found!"})
+        }
 
         await prisma.register.create({
             data: {
@@ -59,9 +64,7 @@ class RegistersController {
             
         })
 
-        if(!registers){
-            return response.status(404).json({message: "No registers added yet"})
-        }
+       
 
         return response.json(registers)
     }
@@ -73,6 +76,11 @@ class RegistersController {
 
         const {register_id} = paramsSchema.parse(request.params)
 
+        const registerWithThisId = await prisma.register.findFirst({where : {id:register_id}})
+
+        if(!registerWithThisId){
+            return response.status(404).json({message: "Register not found!"})
+        }
         
         await prisma.register.update({
             data: {
