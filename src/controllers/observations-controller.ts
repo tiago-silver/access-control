@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 
 import { prisma } from "@/database/prisma";
-import { AppError } from "@/utils/AppError";
 import { z } from "zod";
 
 
@@ -11,16 +10,20 @@ class ObservationsController {
         const bodySchema = z.object({
             title: z.string(),
             description: z.string(),
-            user_id: z.string().uuid()
+            
         })
 
-        const {title, description, user_id} = bodySchema.parse(request.body)
+        const {title, description} = bodySchema.parse(request.body)
+
+        if(!request.user){
+            return response.status(404).json({message: "Usuário nao encontrado!"})
+        }
 
         await prisma.observation.create({
             data: {
                 title,
                 description,
-                userId: user_id
+                userId: request.user.id
             }
         })
 
@@ -31,6 +34,7 @@ class ObservationsController {
 
         const observations = await prisma.observation.findMany({
             select: {
+                id: true,
                 title: true,
                 description: true,
                 createdAt: true,
@@ -48,6 +52,21 @@ class ObservationsController {
         })
 
         return response.json(observations)
+    }
+
+    async remove(request: Request, response: Response){
+        const paramsSchema = z.object({
+            observation_id: z.string().uuid()
+        })
+
+        const {observation_id} = paramsSchema.parse(request.params)
+
+        await prisma.observation.delete({
+            where : {
+                id: observation_id
+            }
+        })
+        return response.json()
     }
 }
 

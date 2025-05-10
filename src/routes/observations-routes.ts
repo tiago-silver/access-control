@@ -9,5 +9,6 @@ observationsRoutes.use(ensureAuthenticated)
 
 observationsRoutes.post("/", observationsController.create)
 observationsRoutes.get("/", observationsController.index)
+observationsRoutes.delete("/:observation_id", observationsController.remove)
 
 export{observationsRoutes}

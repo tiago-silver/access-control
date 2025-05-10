@@ -13,15 +13,14 @@ class RegistersController {
             destination: z.enum(["A", "B", "C", "D"]),
             authorized_by: z.string().trim().min(3),
             observation: z.string().max(500).optional(),
-            user_id: z.string().uuid()
+            
         })
 
-        const {name, destination, authorized_by, observation, user_id} = bodySchema.parse(request.body)
+        const {name, destination, authorized_by, observation} = bodySchema.parse(request.body)
 
-        const userWithThisUserId = await prisma.user.findFirst({where : {id:user_id}})
         
-        if(!userWithThisUserId){
-            return response.status(404).json({message: "User not found!"})
+        if(!request.user){
+            return response.status(404).json({message: "Usuário nao encontrado!"})
         }
 
         await prisma.register.create({
@@ -30,7 +29,7 @@ class RegistersController {
                 destination,
                 authorizedBy: authorized_by,
                 observation,
-                userId: user_id
+                userId: request.user.id
             }
         })
 
@@ -41,6 +40,7 @@ class RegistersController {
 
         const registers = await prisma.register.findMany({
                 select: {
+                    id: true,
                     name: true,
                     destination: true,
                     authorizedBy: true,
@@ -48,18 +48,27 @@ class RegistersController {
                     entry: true,
                     exit: true,
                     
-                    user: {
-                        select: {
-                            name: true,
-                            registration: true
-                        }
-                    },
+                    
 
                     vehicle: {
                         select: {
                             plate: true
                         }
-                    }
+                    },
+
+                    user: {
+                        select: {
+                            name: true,
+                            
+                        }
+                    },
+                },
+                where: {
+                    exit: null
+                },
+
+                orderBy: {
+                    entry: "desc"
                 }
             
         })
@@ -79,8 +88,9 @@ class RegistersController {
         const registerWithThisId = await prisma.register.findFirst({where : {id:register_id}})
 
         if(!registerWithThisId){
-            return response.status(404).json({message: "Register not found!"})
+            return response.status(404).json({message: "Registro não encontrado!"})
         }
+
         
         await prisma.register.update({
             data: {
@@ -95,6 +105,73 @@ class RegistersController {
         return response.json()
     }
 
+
+    async show(request: Request, response: Response){
+
+        const querySchema = z.object({
+            findByName: z.string().optional().default(""),
+            findByDate: z.coerce.date().optional(),
+        })
+
+        const {findByName, findByDate} = querySchema.parse(request.query)
+
+        let dateFilter = {}
+
+        if(findByDate){
+            const startOfDay = new Date(findByDate)
+            startOfDay.setUTCHours(0,0,0,0)
+
+            const endOfDay = new Date(findByDate)
+            endOfDay.setUTCHours(23,59,59,999)
+
+            dateFilter = {
+              entry: {
+                gte: startOfDay,
+                lte: endOfDay
+              }
+            }
+        }
+
+        const registers = await prisma.register.findMany({
+        
+                include: {
+
+                    vehicle: {
+                        select: {
+                            plate: true,
+                            brand: true,
+                            model: true
+                        }
+                    },
+                    user: {
+                        select: {
+                            name: true,
+                            registration: true
+                        }
+                    }
+                },
+    
+                where: {
+            
+                    name: {
+                        contains: findByName.trim(),
+                        mode: "insensitive"
+                    },
+
+                    ...dateFilter
+                
+                    
+                }
+            },
+            
+        )
+
+        return response.json(registers)
+
+    }
+
 }
+
+
 
 export{RegistersController}

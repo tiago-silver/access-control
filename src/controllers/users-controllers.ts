@@ -20,7 +20,7 @@ class UsersController {
         const userWithSameRegistration = await prisma.user.findFirst({where: {registration}})
 
         if(userWithSameRegistration){
-            throw new AppError("User with the same registration already exist")
+            throw new AppError("Já existe um usuário cadastrado com essa matricula!",)
         }
 
         const hashedPassword = await hash(password, 8)
@@ -33,9 +33,11 @@ class UsersController {
             }
         })
 
-        const {password:_, ...userWithOutPassword} = user
+        const {password: _, ...userWithoutPassword} = user
 
-        return response.status(201).json(userWithOutPassword)
+        
+
+        return response.status(201).json(userWithoutPassword)
     }
 }
 
